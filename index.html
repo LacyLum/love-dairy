@@ -132,28 +132,73 @@
       loadPhotosFromGitHub();
     }
 
-    // ✅ 留言板（带时间戳）
-    let messages = [];
-    function saveMessagesToLocal() {
-      localStorage.setItem("loveMessages", JSON.stringify(messages));
-    }
-    function loadMessagesFromLocal() {
-      const stored = localStorage.getItem("loveMessages");
-      if (stored) messages = JSON.parse(stored);
-    }
-    function renderMessages() {
-      const container = document.getElementById("messageList");
-      container.innerHTML = messages.map(m => `<div class='msg'>${m}</div>`).join("");
-    }
-    function addMessage() {
-      const input = document.getElementById("msgInput").value.trim();
-      if (!input) return alert("请输入留言内容");
-      const time = new Date().toLocaleString();
-      messages.push(`${time}：${input}`);
-      saveMessagesToLocal();
-      renderMessages();
-      document.getElementById("msgInput").value = "";
-    }
+// ✅ 留言板（GitHub JSON版）
+const repoOwner = "你的GitHub用户名";
+const repoName = "你的仓库";
+const branch = "main";
+const token = "你的GitHubToken"; // ⚠️ 仅测试用，不推荐直接放前端
+const filePath = "messages.json";
+
+// 读取留言
+async function loadMessagesFromGitHub() {
+  const res = await fetch(`https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`);
+  const data = await res.json();
+  renderMessages(data);
+}
+
+// 渲染留言
+function renderMessages(msgs) {
+  const container = document.getElementById("messageList");
+  container.innerHTML = msgs.map(m => `
+    <div class="msg"><b>${m.time}</b><br>${m.text}</div>
+  `).join("");
+}
+
+// 添加留言
+async function addMessage() {
+  const input = document.getElementById("msgInput").value.trim();
+  if (!input) return alert("请输入留言内容");
+
+  const time = new Date().toLocaleString();
+  const newMsg = { time, text: input };
+
+  // 1. 获取 GitHub 文件
+  const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+    headers: { Authorization: `token ${token}` }
+  });
+  const fileData = await res.json();
+  const content = JSON.parse(atob(fileData.content));
+
+  // 2. 更新内容
+  content.push(newMsg);
+
+  // 3. 提交到 GitHub
+  const updateRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+    method: "PUT",
+    headers: {
+      "Authorization": `token ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: "Add new message",
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+      sha: fileData.sha,
+      branch
+    })
+  });
+
+  if (updateRes.ok) {
+    alert("留言成功啦 💖");
+    document.getElementById("msgInput").value = "";
+    loadMessagesFromGitHub(); // 刷新留言列表
+  } else {
+    alert("留言失败，请检查 Token 或仓库权限");
+  }
+}
+
+// 页面加载时调用
+window.addEventListener("load", loadMessagesFromGitHub);
+
 
     // ✅ 纪念日倒计时
     function updateTimer() {
