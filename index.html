@@ -132,14 +132,15 @@
       loadPhotosFromGitHub();
     }
 
-// ✅ 留言板（GitHub JSON版）
+<script>
+// GitHub 配置
 const repoOwner = "你的GitHub用户名";
-const repoName = "你的仓库";
+const repoName = "你的仓库名";
 const branch = "main";
-const token = "你的GitHubToken"; // ⚠️ 仅测试用，不推荐直接放前端
+const token = "你的GitHubToken"; // ⚠️ 仅测试用，别长期放前端
 const filePath = "messages.json";
 
-// 读取留言
+// 从 GitHub 读取留言
 async function loadMessagesFromGitHub() {
   const res = await fetch(`https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`);
   const data = await res.json();
@@ -162,17 +163,17 @@ async function addMessage() {
   const time = new Date().toLocaleString();
   const newMsg = { time, text: input };
 
-  // 1. 获取 GitHub 文件
+  // 获取 GitHub 文件内容
   const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
     headers: { Authorization: `token ${token}` }
   });
   const fileData = await res.json();
   const content = JSON.parse(atob(fileData.content));
 
-  // 2. 更新内容
+  // 更新留言数组
   content.push(newMsg);
 
-  // 3. 提交到 GitHub
+  // 提交更新到 GitHub
   const updateRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
     method: "PUT",
     headers: {
@@ -190,14 +191,15 @@ async function addMessage() {
   if (updateRes.ok) {
     alert("留言成功啦 💖");
     document.getElementById("msgInput").value = "";
-    loadMessagesFromGitHub(); // 刷新留言列表
+    loadMessagesFromGitHub(); // 刷新
   } else {
     alert("留言失败，请检查 Token 或仓库权限");
   }
 }
 
-// 页面加载时调用
+// 页面加载时获取留言
 window.addEventListener("load", loadMessagesFromGitHub);
+</script>
 
 
     // ✅ 纪念日倒计时
