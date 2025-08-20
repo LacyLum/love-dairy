@@ -119,10 +119,122 @@
     </div>
   </section>
 
-  <section>
-    <h2>我们的歌单</h2>
-    <iframe src="https://www.youtube.com/embed/5qap5aO4i9A" allowfullscreen></iframe>
-  </section>
+<section>
+  <h2>我们的歌单</h2>
+  <div style="max-width:600px; margin:auto;">
+    <!-- 播放器 -->
+    <iframe id="musicPlayer" src="" allowfullscreen></iframe>
+
+    <!-- 控制按钮 -->
+    <div style="margin-top:10px;">
+      <button onclick="prevSong()" style="padding:8px 15px; border:none; border-radius:8px; background:#ff99cc; color:white; font-weight:bold; cursor:pointer;">⏮ 上一首</button>
+      <button onclick="nextSong()" style="padding:8px 15px; border:none; border-radius:8px; background:#ff99cc; color:white; font-weight:bold; cursor:pointer;">⏭ 下一首</button>
+    </div>
+
+    <!-- 当前播放 -->
+    <p id="songTitle" style="margin-top:10px; font-weight:bold; color:#e91e63;"></p>
+
+    <!-- 添加新歌 -->
+    <div style="margin-top:15px;">
+      <input type="text" id="songInput" placeholder="粘贴 YouTube 链接..." 
+             style="width:70%; padding:8px; border:1px solid #ccc; border-radius:8px;">
+      <button onclick="addSong()" 
+              style="padding:8px 12px; border:none; border-radius:8px; background:#4caf50; color:white; font-weight:bold; cursor:pointer;">➕ 添加歌曲</button>
+    </div>
+
+    <!-- 歌单列表 -->
+    <ul id="playlist" style="margin-top:20px; list-style:none; padding:0; text-align:left;"></ul>
+  </div>
+</section>
+
+<script>
+  // 初始歌曲清单
+  let songs = [
+    { id: "5qap5aO4i9A", title: "🎵 Lofi 音乐（学习/放松）" },
+    { id: "dQw4w9WgXcQ", title: "💖 情侣主题曲" },
+    { id: "kXYiU_JCYtU", title: "🎸 Linkin Park - Numb" }
+  ];
+
+  let currentSong = 0;
+
+  function loadSong(index) {
+    const player = document.getElementById("musicPlayer");
+    player.src = "https://www.youtube.com/embed/" + songs[index].id + "?autoplay=1";
+    document.getElementById("songTitle").textContent = "正在播放：" + songs[index].title;
+    highlightCurrentSong();
+  }
+
+  function prevSong() {
+    currentSong = (currentSong - 1 + songs.length) % songs.length;
+    loadSong(currentSong);
+  }
+
+  function nextSong() {
+    currentSong = (currentSong + 1) % songs.length;
+    loadSong(currentSong);
+  }
+
+  // 添加新歌
+  function addSong() {
+    const input = document.getElementById("songInput").value.trim();
+    if (!input) return alert("请输入 YouTube 链接");
+
+    // 提取 YouTube 视频 ID
+    let videoId = "";
+    if (input.includes("watch?v=")) {
+      videoId = input.split("watch?v=")[1].split("&")[0];
+    } else if (input.includes("youtu.be/")) {
+      videoId = input.split("youtu.be/")[1].split("?")[0];
+    } else if (input.includes("embed/")) {
+      videoId = input.split("embed/")[1].split("?")[0];
+    } else {
+      return alert("链接格式不正确，请输入 YouTube 视频链接");
+    }
+
+    // 加入播放列表
+    const newSong = { id: videoId, title: "🎶 新歌" };
+    songs.push(newSong);
+    currentSong = songs.length - 1;
+    renderPlaylist();
+    loadSong(currentSong);
+
+    document.getElementById("songInput").value = "";
+  }
+
+  // 渲染歌单列表
+  function renderPlaylist() {
+    const playlist = document.getElementById("playlist");
+    playlist.innerHTML = "";
+    songs.forEach((song, index) => {
+      const li = document.createElement("li");
+      li.textContent = song.title;
+      li.style.padding = "8px";
+      li.style.cursor = "pointer";
+      li.style.borderBottom = "1px solid #ddd";
+
+      li.onclick = () => {
+        currentSong = index;
+        loadSong(currentSong);
+      };
+
+      playlist.appendChild(li);
+    });
+    highlightCurrentSong();
+  }
+
+  // 高亮当前播放歌曲
+  function highlightCurrentSong() {
+    const playlistItems = document.querySelectorAll("#playlist li");
+    playlistItems.forEach((li, index) => {
+      li.style.background = (index === currentSong) ? "#ffe6f0" : "transparent";
+      li.style.fontWeight = (index === currentSong) ? "bold" : "normal";
+    });
+  }
+
+  // 初始化
+  renderPlaylist();
+  loadSong(currentSong);
+</script>
 
   <script>
     function updateTimer() {
