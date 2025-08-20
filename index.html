@@ -92,7 +92,6 @@
   <script>
     const githubJsonUrl = "https://raw.githubusercontent.com/LacyLum/love-dairy/main/cloudinary_image_links.json";
 
-    // ✅ 加载 GitHub JSON 里的照片
     async function loadPhotosFromGitHub() {
       try {
         const res = await fetch(githubJsonUrl);
@@ -104,7 +103,6 @@
       }
     }
 
-    // ✅ 上传到 Cloudinary
     async function uploadToCloudinary() {
       const file = document.getElementById('photoInput').files[0];
       if (!file) {
@@ -116,7 +114,7 @@
       formData.append("file", file);
       formData.append("upload_preset", "love_diary_upload"); // 替换为你的 preset
 
-      const response = await fetch("https://api.cloudinary.com/v1_1/dgyypvkar/image/upload", {
+      const response = await fetch("https://api.cloudinary.com/v1_1/dqpyvkirr/image/upload", {
         method: "POST",
         body: formData
       });
@@ -124,85 +122,67 @@
       const url = data.secure_url;
 
       document.getElementById('uploadStatus').innerHTML = `上传成功！<br><img src="${url}" width="200">`;
-
-      // 👉 这里如果要自动更新 GitHub JSON，需要用 GitHub API
-      // 简化：上传成功后提醒用户手动更新
-      alert("请把这个链接手动加到 photos.json 里：\n" + url);
+      alert("请把这个链接手动加到 cloudinary_image_links.json 里：\n" + url);
 
       loadPhotosFromGitHub();
     }
 
-<script>
-// GitHub 配置
-const repoOwner = "你的GitHub用户名";
-const repoName = "你的仓库名";
-const branch = "main";
-const token = "你的GitHubToken"; // ⚠️ 仅测试用，别长期放前端
-const filePath = "message.json";
+    const repoOwner = "LacyLum";
+    const repoName = "love-dairy";
+    const branch = "main";
+    const token = "你的GitHubToken"; // ⚠️ 仅测试用，别长期放前端
+    const filePath = "messages.json";
 
-// 从 GitHub 读取留言
-async function loadMessagesFromGitHub() {
-  const res = await fetch(`https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`);
-  const data = await res.json();
-  renderMessages(data);
-}
+    async function loadMessagesFromGitHub() {
+      const res = await fetch(`https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`);
+      const data = await res.json();
+      renderMessages(data);
+    }
 
-// 渲染留言
-function renderMessages(msgs) {
-  const container = document.getElementById("messageList");
-  container.innerHTML = msgs.map(m => `
-    <div class="msg"><b>${m.time}</b><br>${m.text}</div>
-  `).join("");
-}
+    function renderMessages(msgs) {
+      const container = document.getElementById("messageList");
+      container.innerHTML = msgs.map(m => `
+        <div class="msg"><b>${m.time}</b><br>${m.text}</div>
+      `).join("");
+    }
 
-// 添加留言
-async function addMessage() {
-  const input = document.getElementById("msgInput").value.trim();
-  if (!input) return alert("请输入留言内容");
+    async function addMessage() {
+      const input = document.getElementById("msgInput").value.trim();
+      if (!input) return alert("请输入留言内容");
 
-  const time = new Date().toLocaleString();
-  const newMsg = { time, text: input };
+      const time = new Date().toLocaleString();
+      const newMsg = { time, text: input };
 
-  // 获取 GitHub 文件内容
-  const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
-    headers: { Authorization: `token ${token}` }
-  });
-  const fileData = await res.json();
-  const content = JSON.parse(atob(fileData.content));
+      const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+        headers: { Authorization: `token ${token}` }
+      });
+      const fileData = await res.json();
+      const content = JSON.parse(atob(fileData.content));
+      content.push(newMsg);
 
-  // 更新留言数组
-  content.push(newMsg);
+      const updateRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `token ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: "Add new message",
+          content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+          sha: fileData.sha,
+          branch
+        })
+      });
 
-  // 提交更新到 GitHub
-  const updateRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
-    method: "PUT",
-    headers: {
-      "Authorization": `token ${token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      message: "Add new message",
-      content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
-      sha: fileData.sha,
-      branch
-    })
-  });
+      if (updateRes.ok) {
+        alert("留言成功啦 💖");
+        document.getElementById("msgInput").value = "";
+        loadMessagesFromGitHub();
+      } else {
+        alert("留言失败，请检查 Token 或仓库权限");
+      }
+    }
 
-  if (updateRes.ok) {
-    alert("留言成功啦 💖");
-    document.getElementById("msgInput").value = "";
-    loadMessagesFromGitHub(); // 刷新
-  } else {
-    alert("留言失败，请检查 Token 或仓库权限");
-  }
-}
-
-// 页面加载时获取留言
-window.addEventListener("load", loadMessagesFromGitHub);
-</script>
-
-
-    // ✅ 纪念日倒计时
     function updateTimer() {
       const startDate = new Date("2024-09-01T00:00:00");
       const now = new Date();
@@ -225,11 +205,9 @@ window.addEventListener("load", loadMessagesFromGitHub);
       document.getElementById("countdownMessage").textContent = `📅 距离我们的 ${years + 1} 周年纪念日还有 ${daysLeft} 天 💜`;
     }
 
-    // ✅ 页面加载时执行
     window.addEventListener("load", () => {
       loadPhotosFromGitHub();
-      loadMessagesFromLocal();
-      renderMessages();
+      loadMessagesFromGitHub();
       updateTimer();
       setInterval(updateTimer, 60000);
     });
